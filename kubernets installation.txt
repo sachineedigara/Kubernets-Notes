@@ -1,0 +1,32 @@
+apt update
+apt-get install ca-certificates curl gnupg lsb-release -y
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg |  gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" |  tee /etc/apt/sources.list.d/docker.list > /dev/null
+ apt update
+apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key |  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' |  tee /etc/apt/sources.list.d/kubernetes.list
+apt update
+
+apt-get install kubeadm kubelet kubectl -y
+
+
+rm /etc/containerd/config.toml
+
+systemctl restart containerd
+=======================================================================================
+======================================================================================
+in Master noderun below commands
+
+sudo kubeadm init --pod-network-cidr=10.10.0.0/16
+
+mkdir -p $HOME/.kube
+
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+kubeadm init --apiserver-advertise-address=172.31.87.113 --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=ALL
+
+kubeadm join 172.31.87.113:6443 --token 0iu4nz.pr1y6tnhwfva82zt

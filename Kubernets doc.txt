@@ -1,0 +1,27 @@
+INSTALLATION (install these commands on all nodes )
+
+apt-get update && apt-get upgrade -y (on all nodes for package up to date on the server)
+
+sudo apt install apt-transport-https ca-certificates curl software-properties-common  (this command installs the pre req packages for docker installation)
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -  (this commands adds the gpg keys for docker package)
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable" (this command updates the repo tree on the server and adds docker repo )
+
+sudo apt install docker-ce (this command installs docker service)
+
+please make sure that you disable the swap from all the three machines permanently
+
+sudo swapoff -a
+
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+sudo apt-add-repository "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+
+sudo apt install kubeadm kubelet kubectl kubernetes-cni
+
+=====================================================================
+sudo apt-add-repository "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+
+

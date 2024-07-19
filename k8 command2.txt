@@ -1,0 +1,53 @@
+    1   sudo apt update
+    2  sudo apt-get install ca-certificates curl gnupg lsb-release
+    3  sudo mkdir -p /etc/apt/keyrings
+    4  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    5  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    6  sudo apt update
+    7  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    8  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    9  echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+   10  sudo apt update
+   11  sudo apt-get install kubeadm kubelet kubectl -y
+   12  sudo su
+   13  sudo rm /etc/containerd/config.toml
+   14  sudo systemctl restart containerd
+   15  sudo kubeadm init --apiserver-advertise-address=<your private IP address> --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=ALL
+   16  sudo kubeadm init --apiserver-advertise-address=172.31.16.61 --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=ALL
+   17  kubeadm join 172.31.16.61:6443 --token 0iu4nz.pr1y6tnhwfva82zt \
+   18  mkdir -p $HOME/.kube
+   19  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+   20  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+   21  kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+   22  kubectl get nodes
+   23  kubectl get nodes.
+   24  kubectl get nodes
+   25  history
+===========================================================================================================================================================
+
+sudo kubeadm init --pod-network-cidr=10.10.0.0/16 
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 172.31.53.190:6443 --token qixswr.zmlu444bugepp5mk \
+        --discovery-token-ca-cert-hash sha256:a970a3701edb44c73c57ec4e2f3770510c08fee882442b7575277b449d21e921 
+root@K8Master:~# 
+
+
+sudo kubeadm token create --print-join-command

@@ -1,0 +1,148 @@
+Storage
+===========
+2 types
+---
+1}  Ephimeral ( temporary)
+2}  persistant ( permanent)
+
+  Storage:---
+===============
+   --------> it is used to store data
+              ---------> types of storage
+              a> ephemeral/ temp storage:---
+                                         ------> default storage type
+                                         
+              b> persistent /permanent storage:---
+                                               ------> imp data will be available after delete the pod also 
+
+----------------
+1]  ephemeral storage: emptyDir (tempoarary storage)
+-----------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod
+spec:
+  containers:
+  - name: mycont1
+    image: htshshrm2/mywebapp
+    volumeMounts:
+    - name: myvol
+      mountPath: /mount
+  volumes:
+  - name: myvol
+    emptyDir: {} 
+
+-------------------------------
+
+root@K8Master:~/storage# kubectl get pod -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP              NODE        NOMINATED NODE   READINESS GATES
+testpod   1/1     Running   0          96s   10.10.226.114   k8worker1   <none>           <none>
+root@K8Master:~/storage# kubectl exec -it testpod /bin/sh
+
+/opt # cd ..
+bin    dev    etc    home   lib    media  mnt    mount  opt    proc   root   run    sbin   srv    sys    tmp    usr    var
+/ # cd mount
+/mount # touch file{1,2,3}
+/mount # ls
+file{1,2,3}
+/mount # 
+  
+
+The testpod is running in worker1, login to worker 1 and check
+---------------------------------------------------------------
+path
+-------
+/var/lib/kubelet/pods/3de61e55-1a42-4966-8ff9-5349c8413a99/volumes/kubernetes.io~empty-dir/myvol
+file{1,2,3}       
+
+once you delete pod, volume will also delete in this path     
+
+==================================================================
+
+2}  Persistant storage ( permanent staorage)     
+--------------------------------------------
+ 1. persistentvolume (PV)
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: store-persistent-volume
+spec:
+  storageClassName: hostpath
+  capacity:
+    storage: 2Gi
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/Volumes/Data/data"
+
+--------------------------------
+
+root@K8Master:~/storage# kubectl get pv
+NAME                      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
+store-persistent-volume   2Gi        RWO            Retain           Available           hostpath                36s
+---------------------------------------------------
+    
+
+2. PersistentvolumeClaime (PVC)
+--------------
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: store-persistent-volume-claim
+spec:
+  storageClassName: hostpath
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+-----------
+root@K8Master:~/storage# kubectl get pvc
+NAME                            STATUS   VOLUME                    CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+store-persistent-volume-claim   Bound    store-persistent-volume   2Gi        RWO            hostpath       5s
+
+
+root@K8Master:~/storage# kubectl get pv
+
+NAME                      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                   STORAGECLASS   REASON   AGE
+store-persistent-volume   2Gi        RWO            Retain           Bound    default/store-persistent-volume-claim   hostpath                16m
+
+*** Now the vomume is claimed and bounded
+
+---------------------------------------------
+
+
+deployment
+----------
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: store-deployment
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: store
+  template:
+    metadata:
+      labels:
+        k8s-app: store
+    spec:
+      volumes:
+      - name: store-volume
+        persistentVolumeClaim:
+          claimName: store-persistent-volume-claim
+      containers:
+      - name: store
+
+------------------------------------------------------
+
+
+                           

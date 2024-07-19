@@ -1,0 +1,281 @@
+
+1}  init container
+2}  sidecar container
+
+1}  init containe
+------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-prod
+spec:
+  volumes:
+  - name: myvol
+    emptyDir: {}
+  containers:
+  - name: mycontainer
+    image: htshshrm2/nginxdemo
+    volumeMounts:
+    - name: myvol
+      mountPath: /usr/share/nginx/html
+  initContainers:
+  - name: init1
+    image: busybox
+    command: ["wget","-O","/webfolder/index.html","https://download.docker.com/linux/centos/docker-ce.repo"]
+    volumeMounts:
+    - name: myvol
+      mountPath: /webfolder
+--------------------------------------------------
+
+  root@K8Master:~/initcontainer# kubectl exec -it web-prod -c mycontainer /bin/sh
+kubectl exec [POD] [COMMAND] is DEPRECATED and will be removed in a future version. Use kubectl exec [POD] -- [COMMAND] instead.
+/ # ls
+bin    dev    etc    home   lib    media  mnt    proc   root   run    sbin   srv    sys    tmp    usr    var
+/ # cd
+~ # cd /usr/share/nginx/html
+/usr/share/nginx/html # ls
+index.html      
+
+============================================================
+
+promethrous and grafana
+------------------------       
+
+git clone https://github.com/htshshrm2/grafana.git
+
+root@K8Master:~# cd grafana
+root@K8Master:~/grafana# ls
+1-prometheus  2-grafana
+root@K8Master:~/grafana# cd 1-prometheus
+root@K8Master:~/grafana/1-prometheus# ls
+cluster-role-binding.yaml  cluster-role.yaml  deployment.yaml  prometheus.yaml  service-account.yaml  service.yaml
+
+
+root@K8Master:~# kubectl apply -f grafana/1-prometheus/.
+
+root@K8Master:~# kubectl get deployment -n monitoring
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+prometheus-deployment   1/1     1            1           2m23s
+root@K8Master:~# kubectl get service -n monitoring
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+prometheus-service   ClusterIP   10.106.248.59   <none>        8080/TCP   2m33s
+=================================================================
+
+grafana
+-------
+grafana username:- admin
+grafana password:- Sachin@123
+
+kubectl apply -f grafana/2-grafana/.
+
+root@K8Master:~# kubectl get deployment -n monitoring
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+grafana                 1/1     1            1           65s
+prometheus-deployment   1/1     1            1           5m13s
+root@K8Master:~# kubectl get service -n monitoring
+NAME                 TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+grafana              LoadBalancer   10.107.124.128   172.25.230.10   3000:30532/TCP   76s
+prometheus-service   ClusterIP      10.106.248.59    <none>          8080/TCP         5m25s    
+
+----
+
+root@K8Master:~# kubectl edit svc grafana -n monitoring
+service/grafana edited
+root@K8Master:~# kubectl get svc  -n monitoring
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+grafana              NodePort    10.107.124.128   <none>        3000:30532/TCP   7m41s
+prometheus-service   ClusterIP   10.106.248.59    <none>        8080/TCP         11m
+
+-----------------------
+======================================================
+
+ingress
+-------
+
+
+git clone https://github.com/kubernetes/ingress-nginx
+
+root@K8Master:~/ingress-nginx/deploy/static/provider/cloud# ls
+deploy.yaml  kustomization.yaml
+root@K8Master:~/ingress-nginx/deploy/static/provider/cloud# pwd
+/root/ingress-nginx/deploy/static/provider/cloud
+
+kubectl apply -f deploy.yaml     
+
+
+root@K8Master:~/ingress-nginx/deploy/static/provider/cloud# kubectl get deployment -n ingress-nginx
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+ingress-nginx-controller   1/1     1            1           3m15s
+
+root@K8Master:~/ingress-nginx/deploy/static/provider/cloud# kubectl get svc  -n ingress-nginx
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.105.177.40    172.25.230.10   80:31690/TCP,443:30946/TCP   4m2s
+ingress-nginx-controller-admission   ClusterIP      10.108.149.238   <none>          443/TCP                      4m2s
+
+==============================================
+root@K8Master:~# kubectl create deployment hotel --image htshshrm2/hotel --replicas 2
+
+root@K8Master:~# kubectl create deployment tea --image htshshrm2/tea --replicas 2
+
+root@K8Master:~# kubectl create deployment coffee --image htshshrm2/coffee --replicas 2
+-----
+root@K8Master:~# kubectl get deployment 
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+coffee             2/2     2            2           93s
+hotel              2/2     2            2           2m19s
+tea                2/2     2            2           2m4s
+-----------
+root@K8Master:~# kubectl get pod
+NAME                                READY   STATUS    RESTARTS      AGE
+coffee-777bd56869-n2x9c             1/1     Running   0             35s
+coffee-777bd56869-s2vw7             1/1     Running   0             35s
+hotel-557c6cfff7-2fpzg              1/1     Running   0             80s
+hotel-557c6cfff7-xdlk8              1/1     Running   0             80s
+tea-5bcf96585c-82h9r                1/1     Running   0             66s
+tea-5bcf96585c-rlgwm                1/1     Running   0             66s
+
+------------
+
+exposing the deployments
+------------
+
+ kubectl expose deployment hotel --port 80 --target-port 80 --name hotel-svc --type ClusterIP
+ kubectl expose deployment tea --port 80 --target-port 80 --name tea-svc --type ClusterIP
+ kubectl expose deployment coffee --port 80 --target-port 80 --name coffe-svc --type ClusterIP
+
+root@K8Master:~# kubectl get svc
+NAME                  TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+coffe-svc             ClusterIP      10.101.69.13     <none>          80/TCP           44s
+hotel-svc             ClusterIP      10.111.168.60    <none>          80/TCP           88s
+tea-svc               ClusterIP      10.107.31.127    <none>          80/TCP           62s
+------------------
+
+GROUP:      networking.k8s.io
+KIND:       Ingress
+VERSION:    v1
+
+-------
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotel-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx-example
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hotel-svs
+            port:
+              number: 80
+
+---------------
+root@K8Master:~# kubectl get ingress
+NAME            CLASS           HOSTS   ADDRESS   PORTS   AGE
+hotel-ingress   nginx-example   *                 80      45s
+
+==============
+
+2nd exapmle
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotel-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx-example
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hotel-svc
+            port:
+              number: 80
+      - path: /tea
+        pathType: Prefix
+        backend:
+          service:
+            name: tea-svc
+            port:
+              number: 80
+
+      - path: /coffee
+        pathType: Prefix
+        backend:
+          service:
+            name: coffe-svc
+            port:
+              number: 80
+------------------
+
+root@K8Master:~# kubectl apply -f myingress.yml
+ingress.networking.k8s.io/hotel-ingress configured
+root@K8Master:~# kubectl describe ingress hotel-ingress
+Name:             hotel-ingress
+Labels:           <none>
+Namespace:        default
+Address:          
+Ingress Class:    nginx-example
+Default backend:  <default>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  *           
+              /         hotel-svc:80 (10.10.226.125:80,10.10.81.28:80)
+              /tea      tea-svc:80 (10.10.226.126:80,10.10.81.29:80)
+              /coffee   coffe-svc:80 (10.10.226.127:80,10.10.81.30:80)
+Annotations:  nginx.ingress.kubernetes.io/rewrite-target: /
+Events:       <none>
+=========================
+
+=========================
+
+Netowrk policy
+-------------
+1] ingress    ----incoming
+2] egress     ----outgoing
+
+kubectl run pod1 --image nginx                    IP-10.10.81.31
+
+kubectl run pod2 --image nginx                    IP-10.10.226.65
+
+
+root@K8Master:~# kubectl explain networkpolicy
+GROUP:      networking.k8s.io
+KIND:       NetworkPolicy
+VERSION:    v1
+
+----------
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mynetworkpolicy
+spec:
+ podSelector:
+    matchLabels:
+      run: pod1
+ policyTypes:
+ - Ingress
+ - Egress
+ ingress:
+ - from:
+   - podSelector:
+        matchLabels:
+          run: pod2
+------------------------------
+
+
+annotation resource limits

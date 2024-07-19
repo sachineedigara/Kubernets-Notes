@@ -1,0 +1,246 @@
+
+Sheduling
+---------
+
+
+manuall sheduling
+----------------
+1> node selector
+2> node name
+
+1> node name
+---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myscheduller
+  labels:
+     myapp: webapp
+spec:
+  containers:
+  - name: mycont1
+    image: htshshrm2/mywebapp
+  nodeName: k8worker2
+-------------------
+
+2>  Node selector
+
+kubectl get node --show-labels
+kubectl label node k8worker1 disk=ssd
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mymnodeselector
+  labels:
+     place: davanagere
+spec:
+  containers:
+  - name: mycont1
+    image: htshshrm2/production:v1
+  nodeSelector:
+    disk: ssd
+-----------------
+root@K8Master:~/scheduller# kubectl get pod -o wide
+NAME              READY   STATUS    RESTARTS      AGE   IP              NODE        NOMINATED NODE   READINESS GATES
+mymnodeselector   1/1     Running   0             45s   10.10.226.109   k8worker1   <none>           <none>
+
+----------------
+
+=====================================================================================================================
+
+taint & tolorence
+-----------------
+==================
+
+root@K8Master:~/scheduller# kubectl describe node k8worker1 | grep -i taint
+Taints:             <none>
+
+root@K8Master:~/scheduller# kubectl describe node k8master | grep -i taint
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+
+root@K8Master:~/scheduller# kubectl describe node k8worker2 | grep -i taint
+Taints:             <none>
+
+-------------------
+
+root@K8Master:~/scheduller# kubectl get pod -o wide | grep -i k8worker1
+mymnodeselector   1/1     Running   0             15m   10.10.226.109   k8worker1   <none>           <none>
+mynginx           1/1     Running   2 (29m ago)   23h   10.10.226.108   k8worker1   <none>           <none>
+
+root@K8Master:~/scheduller# kubectl get pod -o wide | grep -i k8worker2
+mypod             1/1     Running   4 (29m ago)   29h   10.10.81.38     k8worker2   <none>           <none>
+myscheduller      1/1     Running   0             24m   10.10.81.39     k8worker2   <none>           <none>
+
+--------------------
+
+kubectl taint node k8worker1 app=nginx:NoSchedule
+kubectl taint node k8worker1 app=nginx:NoExecute
+
+root@K8Master:~# kubectl describe node k8worker1 | grep -i taint
+Taints:             app=nginx:NoExecute
+root@K8Master:~# kubectl describe node k8worker2 | grep -i taint
+Taints:             <none>
+root@K8Master:~# kubectl describe node k8master | grep -i taint
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+
+----------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+Affinity and antiaffinity
+-------------------------
+
+Environmental variables
+-----------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myenv
+spec:
+  containers:
+    - name: mycont
+      image: nginx
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: sachin
+
+----------
+root@K8Master:~/environment# kubectl get pod
+NAME           READY   STATUS    RESTARTS      AGE
+myenv          1/1     Running   0             55s
+
+kubectl exec -it myenv /bin/bash
+
+root@myenv:/# env
+
+sachin=
+MY_SEVICE_SERVICE_PORT=7000
+MYDEPLOYMNETSERVICE_PORT_7050_TCP=tcp://10.104.223.19:7050
+
+----------------------------------
+mysql example
+-----------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myenvmysql
+spec:
+  containers:
+    - name: mycont
+      image: mysql
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: sachin
+--
+
+root@K8Master:~/environment# kubectl get pod
+NAME           READY   STATUS    RESTARTS      AGE
+myenvmysql     0/1     Error     2 (18s ago)   35s
+
+
+root@K8Master:~/environment# kubectl logs myenvmysql
+2024-03-21 08:19:48+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.3.0-1.el8 started.
+2024-03-21 08:19:49+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+2024-03-21 08:19:49+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.3.0-1.el8 started.
+2024-03-21 08:19:49+00:00 [ERROR] [Entrypoint]: Database is uninitialized and password option is not specified
+    You need to specify one of the following as an environment variable:
+    - MYSQL_ROOT_PASSWORD
+    - MYSQL_ALLOW_EMPTY_PASSWORD
+    - MYSQL_RANDOM_ROOT_PASSWORD
+
+------------------
+
+Configmap
+==========
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysqlconfigmap
+data:
+  # property-like keys; each key maps to a simple value
+  MYSQL_ROOT_PASSWORD: sachin@123
+  MYSQL_USER: eedigara
+  MYSQL_DATABASE: mydb
+  MYSQL_PASSWORD: sachin@123
+
+-------
+root@K8Master:~/environment# kubectl get configmap
+NAME               DATA   AGE
+kube-root-ca.crt   1      4d18h
+mysqlconfigmap     4      34s
+
+--------
+
+root@K8Master:~/environment# kubectl describe configmap mysqlconfigmap
+Name:         mysqlconfigmap
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+MYSQL_PASSWORD:
+----
+sachin@123
+MYSQL_ROOT_PASSWORD:
+----
+sachin@123
+MYSQL_USER:
+----
+eedigara
+MYSQL_DATABASE:
+----
+mydb
+
+BinaryData
+====
+
+========================================================
+========================================================
+creating mysql pod with configfile( first create config file and add it here)
+-----------
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysqlwithenv
+spec:
+  containers:
+    - name: mycont2
+      image: mysql
+      imagePullPolicy: IfNotPresent
+      envFrom:
+      - configMapRef:
+          name: mysqlconfigmap
+---------------------------
+
+root@K8Master:~/environment# kubectl get pod
+NAME           READY   STATUS    RESTARTS        AGE
+mysqlwithenv   1/1     Running   0               98s
+
+kubectl describe pod mysqlwithenv
+
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  2m29s  default-scheduler  Successfully assigned default/mysqlwithenv to k8worker2
+  Normal  Pulled     2m28s  kubelet            Container image "mysql" already present on machine
+  Normal  Created    2m28s  kubelet            Created container mycont2
+  Normal  Started    2m28s  kubelet            Started container mycont2
+
+
+

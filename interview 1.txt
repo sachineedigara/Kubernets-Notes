@@ -1,0 +1,105 @@
+select * from emp a where 0=(select count(distinct(b.sal)) from emp b where a.sal<b.sal);
+
+
+table a
+-------
+xyz
+----
+1
+2
+3
+4
+5
+6
+7
+
+table 2
+====
+abc
+------
+2
+4
+6
+
+select a.xyz,b.abc from table a right outer join table b on(a.xyz=b.xyz);
+
+
+select a.xyz, b.abc from table a, tabel b where a.xyz=b.abc;
+
+
+begin
+ execute immediate'Drop table table_name';
+end;
+
+
+delete
+update
+insert
+savepoint x,
+delete,
+update,
+rollback to x;
+
+
+function get_details;
+
+
+select * from table(get_details(10));
+
+select 
+
+
+
+program
+units:=2000
+
+o to 100 5 rupees
+next 400 10 rupees
+next 500 15 rupees
+next value 20 rupees
+
+declare
+rate 1 := 5;
+rate 2 := 10;
+rate 3 := 15;
+rate 4 := 20;
+ begin
+ if c_units
+
+for first 100= 500
+next 400 "=500+(400*10)=
+
+
+create or replace trigger trig1
+before insert on table_name
+ declare
+   g_val number:=
+   vcnt pls_integer;
+
+ begin 
+  select count(*) into
+  vcnt
+ from table_name
+   if  vnct>0 then
+     insert into table values('
+
+
+select * from 
+    ( select ename, salary, rank() over( order by sal desc) as rn from employee)
+     where  rn=2;
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

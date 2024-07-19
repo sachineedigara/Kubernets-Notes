@@ -1,0 +1,51 @@
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+===============================================================================================================================================================
+
+############################################################################
+INSTALLATION (install these commands on all nodes )
+
+apt-get update && apt-get upgrade -y (on all nodes for package up to date on the server)
+
+sudo apt install apt-transport-https ca-certificates curl software-properties-common  (this command installs the pre req packages for docker installation)
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -  (this commands adds the gpg keys for docker package)
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable" (this command updates the repo tree on the server and adds docker repo )
+
+sudo apt install docker-ce (this command installs docker service)
+
+please make sure that you disable the swap from all the three machines permanently
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+sudo apt-add-repository "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+
+sudo apt install kubeadm kubelet kubectl kubernetes-cni
+
+rm /etc/containerd/config.toml
+
+systemctl restart containerd
+
+#######INSTALL THE BELOW COMMAND ON THE MASTER NODE#################################################
+
+sudo kubeadm init --pod-network-cidr=10.10.0.0/16 (default cidr range old version, in new version it can be any range now)
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/calico.yaml (to download the CNI)
+
+Once the cluster master node is in ready state, we can join the worker nodes by using the kubernetes join command on your initialization message
+
+sudo kubeadm token create --print-join-command
+
+K8 commands
+
+kubectl run <podname> --image nginx
+kubectl get node
+kubectl get node -o wide

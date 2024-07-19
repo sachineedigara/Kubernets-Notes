@@ -1,0 +1,101 @@
+root@K8Master:~# kubectl describe node k8worker1 | grep -i taints
+Taints:             game=soccer:NoSchedule
+root@K8Master:~# kubectl describe node k8worker2 | grep -i taints
+Taints:             game=soccer:NoSchedule
+root@K8Master:~# 
+-------------------------------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: common
+  template:
+    metadata:
+      labels:
+        app: common
+    spec:
+      containers:
+      - name: test
+        image: htshshrm2/production:v1
+      tolerations:
+      - key: "game"
+        operator: "Equal"
+        value: "soccer"
+        effect: "NoSchedule"
+-------------------------------------------------
+
+root@K8Master:~/taint_tolerations# kubectl get pod -o wide
+NAME                        READY   STATUS    RESTARTS   AGE   IP              NODE        NOMINATED NODE   READINESS GATES
+training-67866f847d-jjzq2   1/1     Running   0          65s   10.10.226.110   k8worker1   <none>           <none>
+training-67866f847d-ld87g   1/1     Running   0          65s   10.10.81.9      k8worker2   <none>           <none>
+training-67866f847d-qcjdj   1/1     Running   0          65s   10.10.226.111   k8worker1   <none>           <none>
+===============================================
+examplet 2
+it has no toleration, so the pod wont craete 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: common
+  template:
+    metadata:
+      labels:
+        app: common
+    spec:
+      containers:
+      - name: test
+        image: htshshrm2/production:v1
+
+root@K8Master:~/taint_tolerations# kubectl get pod
+NAME                        READY   STATUS    RESTARTS   AGE
+training-56d98c7b5b-q7btw   0/1     Pending   0          9s
+training-56d98c7b5b-q966x   0/1     Pending   0          9s
+training-56d98c7b5b-s7ck7   0/1     Pending   0          9s
+
+============================================================
+
+exapmple 3
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: common
+  template:
+    metadata:
+      labels:
+        app: common
+    spec:
+      containers:
+      - name: test
+        image: htshshrm2/production:v1
+      tolerations:
+      - key: "game"
+        operator: "Equal"
+        value: "soccer"
+        effect: "NoExecute"
+~                                           
+
+root@K8Master:~/taint_tolerations# kubectl get pod
+NAME                       READY   STATUS    RESTARTS   AGE
+training-cbd6c94d8-2jvdr   0/1     Pending   0          6s
+training-cbd6c94d8-bftqm   0/1     Pending   0          6s
+training-cbd6c94d8-l8t4h   0/1     Pending   0          6s
+
+------------------------------------------------------------------
+

@@ -1,0 +1,302 @@
+##############
+
+Horizontal pod autoscaler
+------------------------
+
+autoscaling
+--------
+Horzontal pod autoscaling   ---increasing number of resources 
+vertical  pod autoscaling   ---increasing resource inside the pod
+cluster autoscaling 
+
+
+Horizontal pod autoscaler
+------------------------
+
+metric server helps to HPA to increase or decrease the pods 
+
+We need to install metric server externally to k8 cluster
+
+installing metric server
+------------------------
+
+
+kubectl apply -f https://raw.githubusercontent.com/pythianarora/total-practice/master/sample-kubernetes-code/metrics-server.yaml
+
+
+root@K8Master:~# kubectl top node
+NAME        CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+k8master    267m         13%    1291Mi          33%       
+k8worker1   149m         7%     1067Mi          28%       
+k8worker2   86m          4%     851Mi           22%       
+root@K8Master:~# kubectl top pod
+NAME                                CPU(cores)   MEMORY(bytes)   
+coffee-777bd56869-n2x9c             0m           2Mi             
+coffee-777bd56869-s2vw7             0m           2Mi             
+hotel-557c6cfff7-2fpzg              0m           1Mi             
+hotel-557c6cfff7-xdlk8              0m           1Mi             
+pod1                                0m           3Mi             
+pod2                                0m           7Mi             
+store-deployment-7646f4b5b5-66dvd   1m           20Mi            
+store-deployment-7646f4b5b5-vlspc   1m           20Mi            
+tea-5bcf96585c-82h9r                0m           1Mi             
+tea-5bcf96585c-rlgwm                0m           1Mi             
+web-prod                            0m           1Mi        
+
+=========
+
+
+root@K8Master:~# kubectl get deployment -n kube-system
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+metrics-server            1/1     1            1           13m
+
+==========
+
+root@K8Master:~# kubectl get pod -n kube-system
+NAME                                       READY   STATUS    RESTARTS       AGE
+metrics-server-8857d6b7c-wf4jx             1/1     Running   0              36s    
+
+==========
+
+root@K8Master:~# kubectl explain horizontalpodautoscaler
+GROUP:      autoscaling
+KIND:       HorizontalPodAutoscaler
+VERSION:    v2
+-----
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+
+
+
+----------
+create deployment my-deployment
+
+vi my-deployment.yml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-test
+spec:
+  selector:
+    matchLabels:
+      run: myapp-test
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: myapp-test
+    spec:
+      containers:
+        - name: cont1
+          image: busybox
+          resources:
+            limits:
+              cpu: 50m
+            requests:
+              cpu: 20m
+          command: ["sh", "-c"]
+          args: 
+            - "while true; do echo 'Test'; sleep 0.01; done"
+
+============================
+root@K8Master:~# kubectl get hpa
+NAME       REFERENCE                  TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+hpa-demo   Deployment/my-deployment   <unknown>/80%   1         3         0          29s
+
+==================================
+
+==================================
+
+
+====================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+spec:
+  selector:
+    matchLabels:
+      run: php-apache
+  template:
+    metadata:
+      labels:
+        run: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: registry.k8s.io/hpa-example
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  labels:
+    run: php-apache
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: php-apache
+-------------
+kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+
+kubectl get hpa
+
+# Run this in a separate terminal
+# so that the load generation continues and you can carry on with the rest of the steps
+kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://php-apache; done"
+
+# type Ctrl+C to end the watch when you're ready
+kubectl get hpa php-apache --watch
+====================================================================
+Back up
+=======
+
+https://k21academy.com/docker-kubernetes/etcd-backup-restore-in-k8s-step-by-step/
+
+root@K8Master:/etc/kubernetes/manifests# ls
+etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml
+
+==
+Installing and Placing Etcd Binaries
+----------
+1)  Create a temporary directory & download the ETCD binaries.
+
+$ mkdir -p /tmp/etcd && cd /tmp/etcd
+$ curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
+
+
+2) Unzip the compressed binaries:
+
+$ tar xvf *.tar.gz
+
+
+Installing and Placing Etcd Binaries
+Users mostly interact with etcd by putting or getting the value of a key. We do that by using etcdctl, a command line tool for interacting with etcd server. In this section, we are downloading the etcd binaries so that we have the etcdctl tool with us to interact.
+
+1)  Create a temporary directory & download the ETCD binaries.
+
+$ mkdir -p /tmp/etcd && cd /tmp/etcd
+$ curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
+
+
+2) Unzip the compressed binaries:
+
+$ tar xvf *.tar.gz
+
+3. Move the etcd folder to /local/bin/ makes the etcd binary globally accessible on your system, simplifying the process of running etcd commands.
+
+$ cd etcd-*/
+$ mv etcd* /usr/local/bin/
+$ cd ~
+$ rm -rf /tmp/etcd
+
+Find K8s Manifest Location
+In Cluster we can check manifest default location with the help of the kubelet config file.
+
+# cat /var/lib/kubelet/config.yaml
+
+Home / Docker Kubernetes / Etcd Backup And Restore In Kubernetes: Step By Step Guide
+Etcd Backup And Restore In Kubernetes: Step By Step Guide
+
+November 18, 2023 by Sahid 2 Comments
+
+ 35243 views
+The etcd server is the only stateful component of the Kubernetes cluster. Kubernetes stores all API objects and settings on the etcd server. Etcd backup is enough to restore the Kubernetes cluster’s state completely. Kubernetes disaster recovery plans often include backing up the etcd cluster and using infrastructure as code to create new cloud servers.
+
+In this blog, we will cover How to Backup & Restore the Etcd in Kubernetes. We have a set of Hands-on Labs that you must perform in order to learn Docker & Kubernetes and clear the CKA certification exam. Cluster Architecture, Installation & Configuration which includes etcd backup and restore, has a total weightage of 25% in the Exam.
+
+In this blog post, we are going to cover the following topics:
+
+What is Etcd?
+Kubernetes and Etcd
+Prerequisites
+Installing and Placing Etcd Binaries
+Find K8s Manifest Location
+How to backup the Etcd & Restore it
+Scenarios & Use Cases
+Conclusion
+What is Etcd?
+Etcd is a distributed key-value store with high consistency that provides a secure mechanism to store data that must be accessible by a distributed system or cluster of machines. During network partitions, it gently conducts leader elections and can withstand machine failure, even in the master node.
+
+Etcd is used in a variety of different applications. It is most famous for being the core datastore for Kubernetes, the de facto standard for container orchestration. Cloud-native apps that use etcd can have more continuous uptime and keep operating even when individual servers fail. Applications read and write to etcd, which distributes configuration data and provides redundancy and robustness for node configuration.
+
+Kubernetes and Etcd
+Etcd is the Kubernetes‘ primary datastore, that stores and duplicates all Kubernetes cluster states. Because etcd is such a vital component of a Kubernetes cluster, it’s critical that it’s configured and managed properly.
+
+The cluster configuration of etcd can be challenging because it is a distributed consensus-based system. Bootstrapping, maintaining quorum, adjusting cluster membership, making backups, dealing with disaster recovery, and monitoring crucial events are all time-consuming and difficult operations that require specialist knowledge. In Etcd we can create backup & restore within the cluster and we can run this on the separate server for the HA cluster.
+
+
+Pre Requisite
+Make sure you have a K8s cluster deployed already.
+
+Learn How To Setup A Three Node Kubernetes Cluster For CKA
+
+Installing and Placing Etcd Binaries
+Users mostly interact with etcd by putting or getting the value of a key. We do that by using etcdctl, a command line tool for interacting with etcd server. In this section, we are downloading the etcd binaries so that we have the etcdctl tool with us to interact.
+
+1)  Create a temporary directory & download the ETCD binaries.
+
+$ mkdir -p /tmp/etcd && cd /tmp/etcd
+$ curl -s https://api.github.com/repos/etcd-io/etcd/releases/latest | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4 | wget -qi -
+
+
+2) Unzip the compressed binaries:
+
+$ tar xvf *.tar.gz
+
+3. Move the etcd folder to /local/bin/ makes the etcd binary globally accessible on your system, simplifying the process of running etcd commands.
+
+$ cd etcd-*/
+$ mv etcd* /usr/local/bin/
+$ cd ~
+$ rm -rf /tmp/etcd
+
+Find K8s Manifest Location
+In Cluster we can check manifest default location with the help of the kubelet config file.
+
+# cat /var/lib/kubelet/config.yaml
+
+
+
+How to backup the Etcd & Restore it
+
+ETCDCTL_API=3 etcdctl snapshot backup -h
+
+ETCDCTL_API=3 etcdctl snapshot save snapshot.db --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt --key /etc/kubernetes/pki/
+
+=============================
+
+cluster upgrade
+===============
+root@K8Master:/etc/apt/sources.list.d# ls
+docker.list  kubernetes.list
+root@K8Master:/etc/apt/sources.list.d# pwd
+/etc/apt/sources.list.d

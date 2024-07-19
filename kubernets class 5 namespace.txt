@@ -1,0 +1,253 @@
+
+namespace
+==========
+these are defualt one
+
+root@K8Master:~# kubectl get namespace
+
+NAME              STATUS   AGE
+default           Active   4d19h
+kube-node-lease   Active   4d19h
+kube-public       Active   4d19h
+kube-system       Active   4d19h
+metallb-system    Active   26h
+
+kubectl create namespace eedigara
+
+
+
+root@K8Master:~# kubectl get namespace
+NAME              STATUS   AGE
+default           Active   4d19h
+eedigara          Active   7s
+
+
+------------------
+
+defining namespace in yml file
+-----------------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mynamespace
+  namespace: eedigara
+spec:
+  containers:
+    - name: apple
+      image: nginx
+      imagePullPolicy: IfNotPresent
+
+    - name: mango
+      image: memcached
+      imagePullPolicy: IfNotPresent
+
+    - name: banana
+      image: redis
+      imagePullPolicy: IfNotPresent
+-------
+
+
+root@K8Master:~/sachin# kubectl get pod --namespace eedigara
+
+NAME          READY   STATUS    RESTARTS   AGE
+mynamespace   3/3     Running   0          114s
+--------------------
+when you list all pods without specifying namespace it wont show the namespaced pod in the list
+
+root@K8Master:~/sachin# kubectl get pod
+NAME           READY   STATUS             RESTARTS       AGE
+myenv          1/1     Running            0              59m
+myenvmysql     0/1     CrashLoopBackOff   15 (78s ago)   53m
+mypod          1/1     Running            5 (123m ago)   2d
+myscheduller   1/1     Running            1 (123m ago)   19h
+mysqlwithenv   1/1     Running            0              33m
+
+-------------------------------------
+
+if you want to list all name namespaced pod
+
+kubectl get pod --all-namespaces
+
+kubectl create namespace sachin
+
+root@K8Master:~/sachin# kubectl get pod --namespace sachin
+NAME          READY   STATUS    RESTARTS   AGE
+mynamespace   3/3     Running   0          36s
+
+
+root@K8Master:~/sachin# kubectl get namespace
+NAME              STATUS   AGE
+default           Active   4d19h
+eedigara          Active   12m
+kube-node-lease   Active   4d19h
+kube-public       Active   4d19h
+kube-system       Active   4d19h
+metallb-system    Active   26h
+sachin            Active   2m24s
+
+
+======================================================================================
+
+RBAC
+====
+
+1> user account
+2> service account
+
+root@K8Master:~/sachin# kubectl get serviceaccount
+NAME      SECRETS   AGE
+default   0         4d19h
+
+
+1> normal role
+2> cluster role
+
+normal role: it give acces to specific namespace.
+------------------------------------------------
+
+role----- role binding----user
+
+cluster role:  aplicable entire cluster
+-------------------------------
+
+cluster role----- cluster role binding----user
+
+======================================================
+
+creating a role
+---------------
+
+kubectl create role myrole --help
+
+Examples:
+  # Create a role named "pod-reader" that allows user to perform "get", "watch" and "list" on pods
+  kubectl create role pod-reader --verb=get --verb=list --verb=watch --resource=pods
+  
+  # Create a role named "pod-reader" with ResourceName specified
+  kubectl create role pod-reader --verb=get --resource=pods --resource-name=readablepod --resource-name=anotherpod
+  
+  # Create a role named "foo" with API Group specified
+  kubectl create role foo --verb=get,list,watch --resource=rs.apps
+  
+  # Create a role named "foo" with SubResource specified
+  kubectl create role foo --verb=get,list,watch --resource=pods,pods/status
+-----------------------------------
+
+kubectl create role myrole --verb=get,list,watch --resource=pods
+
+root@K8Master:~/roles# kubectl get role
+NAME     CREATED AT
+myrole   2024-03-21T09:34:47Z
+-------------------------------------------------------------
+
+kubectl create role myrole --verb=get,list,watch --resource=pods  --namespace eedigara
+
+kubectl create role myrolens --verb=get,list,watch --resource=pods  --namespace eedigara
+
+root@K8Master:~/roles# kubectl get role --namespace eedigara
+NAME       CREATED AT
+myrole     2024-03-21T09:49:47Z
+myrolens   2024-03-21T09:50:38Z
+
+
+kubectl describe role  --namespace eedigara
+================================================================
+
+role binding
+------------
+
+kubectl get rolebinding
+
+kubectl create rolebinding --help
+
+Examples:
+  # Create a role binding for user1, user2, and group1 using the admin cluster role
+  kubectl create rolebinding admin --clusterrole=admin --user=user1 --user=user2 --group=group1
+  
+  # Create a role binding for serviceaccount monitoring:sa-dev using the admin role
+  kubectl create rolebinding admin-binding --role=admin --serviceaccount=monitoring:sa-dev
+
+
+---------------------------
+
+we need to create service account
+
+kubectl get serviceaccount
+
+kubectl create serviceaccount --help
+
+Examples:
+  # Create a new service account named my-service-account
+  kubectl create serviceaccount my-service-account
+
+
+kubectl create serviceaccount eedigara --namespace eedigara
+
+root@K8Master:~/roles# kubectl get serviceaccount --namespace eedigara
+NAME       SECRETS   AGE
+default    0         55m
+eedigara   0         31s
+
+---------------
+now craete a rolebinding 
+--------------------
+
+kubectl create rolebinding --help
+
+Examples:
+  # Create a role binding for user1, user2, and group1 using the admin cluster role
+  kubectl create rolebinding admin --clusterrole=admin --user=user1 --user=user2 --group=group1
+  
+  # Create a role binding for serviceaccount monitoring:sa-dev using the admin role
+  kubectl create rolebinding admin-binding --role=admin --serviceaccount=monitoring:sa-dev
+
+
+kubectl create rolebinding myrolebinding --role myrole --user eedigara
+
+oot@K8Master:~/roles# kubectl get rolebinding
+NAME            ROLE          AGE
+myrolebinding   Role/myrole   26s
+
+
+kubectl get rolebinding
+
+root@K8Master:~/roles# kubectl describe rolebinding
+Name:         myrolebinding
+Labels:       <none>
+Annotations:  <none>
+Role:
+  Kind:  Role
+  Name:  myrole
+Subjects:
+  Kind  Name      Namespace
+  ----  ----      ---------
+  User  eedigara  
+
+-------------------------------------------------
+
+vi rbac.yml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myrbac
+  namespace: eedigara
+spec:
+  containers:
+    - name: apple
+      image: nginx
+      imagePullPolicy: IfNotPresent
+  serviceAccountName: eedigara
+----------------------------------------------------------
+
+root@K8Master:~/roles# kubectl get pod --namespace eedigara
+
+NAME          READY   STATUS    RESTARTS   AGE
+mynamespace   3/3     Running   0          70m
+myrbac        1/1     Running   0          113s
+
+kubectl describe pod myrbac --namespace eedigara
+
+
+

@@ -1,0 +1,168 @@
+Service
+-------
+
+1>  Cluster IP
+2>  Nodeport
+3>  Loadbalancer
+
+----------------------------
+1> Cluster IP Example
+
+
+apiVersion: v1
+kind: Service
+metadata:
+   name: my-sevice
+spec:
+   type: ClusterIP
+   ports:
+   - port: 7000
+     targetPort: 80
+   selector:
+     myapp: webapp
+-------------------------
+
+root@K8Master:~/service# kubectl get service
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP    2d23h
+my-sevice    ClusterIP   10.104.15.220   <none>        7000/TCP   46s
+
+
+kubectl describe svc  my-sevice
+---------------------------------
+
+2> Nodeport example
+
+apiVersion: v1
+kind: Service
+metadata:
+   name: my-sevice2
+spec:
+   type: NodePort
+   ports:
+   - port: 7001
+     targetPort: 80
+     nodePort: 30000
+   selector:
+     myapp: webapp
+
+------------------------------
+
+root@K8Master:~/service# vi mynodeport.yml
+root@K8Master:~/service# kubectl apply -f mynodeport.yml
+service/my-sevice2 created
+root@K8Master:~/service# kubectl get service
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP          3d
+my-sevice    ClusterIP   10.104.15.220   <none>        7000/TCP         21m
+my-sevice2   NodePort    10.111.106.26   <none>        7001:30000/TCP   24s
+root@K8Master:~/service# 
+
+
+http://52.91.118.75:30000/     can be accesss
+===========================================================================================
+
+3>  Loadbalancer 
+
+apiVersion: v1
+kind: Service
+metadata:
+   name: my-loadbalancer
+spec:
+   type: LoadBalancer
+   ports:
+   - port: 7002
+     targetPort: 80
+   selector:
+     myapp: webapp
+
+
+root@K8Master:~/service# kubectl get service
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+kubernetes        ClusterIP      10.96.0.1       <none>        443/TCP          3d16h
+my-loadbalancer   LoadBalancer   10.105.16.33    <pending>     7002:32733/TCP   30s
+my-sevice         ClusterIP      10.104.15.220   <none>        7000/TCP         16h
+my-sevice2        NodePort       10.111.106.26   <none>        7001:30000/TCP   16h
+root@K8Master:~/service# 
+
+
+
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.3/config/manifests/metallb-native.yaml
+
+metallb-system
+
+
+root@K8Master:~/service# kubectl explain ipaddresspool
+GROUP:      metallb.io
+KIND:       IPAddressPool
+VERSION:    v1beta1
+
+
+ip address
+------------------
+
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: myipaddresspool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.25.230.10-172.25.230.30
+------------------------------
+
+
+root@K8Master:~/service# kubectl get ipaddresspool -n metallb-system
+NAME              AUTO ASSIGN   AVOID BUGGY IPS   ADDRESSES
+myipaddresspool   true          false             ["172.25.230.10-172.25.230.30"]
+
+------------------------------
+
+
+root@K8Master:~/service# kubectl get service
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+kubernetes        ClusterIP      10.96.0.1       <none>          443/TCP          3d17h
+my-loadbalancer   LoadBalancer   10.105.16.33    172.25.230.10   7002:32733/TCP   20m
+my-sevice         ClusterIP      10.104.15.220   <none>          7000/TCP         17h
+my-sevice2        NodePort       10.111.106.26   <none>          7001:30000/TCP   16h
+----------------------------------
+
+assigning our own ip addres within yml file after installing and congiguring metallb
+
+
+apiVersion: v1
+kind: Service
+metadata:
+   name: my-loadbalancer
+spec:
+   type: LoadBalancer
+   loadBalancerIP: 172.25.230.11
+   ports:
+   - port: 7002
+     targetPort: 80
+   selector:
+     myapp: webapp
+--------------------------
+
+root@K8Master:~/service# kubectl get service
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+kubernetes        ClusterIP      10.96.0.1       <none>          443/TCP          3d17h
+my-loadbalancer   LoadBalancer   10.105.16.33    172.25.230.11   7002:32733/TCP   28m
+my-sevice         ClusterIP      10.104.15.220   <none>          7000/TCP         17h
+my-sevice2        NodePort       10.111.106.26   <none>          7001:30000/TCP   17h
+
+------------------------------------------------------------
+
+
+to expose replicaset 
+
+kubectl expose replicaset myreplica --port 7200 --target-port 80 --name myreplicaservice  --type ClusterIP
+
+root@K8Master:~/service# kubectl get service
+NAME               TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+kubernetes         ClusterIP      10.96.0.1        <none>          443/TCP          3d17h
+my-loadbalancer    LoadBalancer   10.105.16.33     172.25.230.11   7002:32733/TCP   36m
+my-sevice          ClusterIP      10.104.15.220    <none>          7000/TCP         17h
+my-sevice2         NodePort       10.111.106.26    <none>          7001:30000/TCP   17h
+myreplicaservice   ClusterIP      10.100.215.144   <none>          7200/TCP         42s
+

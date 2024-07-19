@@ -1,0 +1,254 @@
+
+
+daemonset
+========
+
+
+root@K8Master:~/daemonset# kubectl explain daemonset
+GROUP:      apps
+KIND:       DaemonSet
+VERSION:    v1
+---------------------
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: mydaemonset
+spec:
+  selector:
+    matchLabels:
+       myapp: webapp
+  template:
+    metadata:
+      labels:
+        myapp: webapp
+    spec:
+      containers:
+      - name: mydnset
+        image: httpd
+        imagePullPolicy: IfNotPresent
+~                                    
+
+------------------------------
+
+kubectl run mypodds --image httpd --labels  myapp=webapp
+kubectl run mypodds2 --image httpd --labels  myapp=webapp
+
+
+kubectl get ds
+kubectl describe ds mydaemonset
+
+=======================================================================================================
+
+
+Deployment 
+----------
+==========
+
+imp***:-   replica set and daemonset shoud not be created before deployment otherwise rooling and rollback wont work.
+***deleted replicaset will empty and stays. when we want do reollback that empty resplicaset set will be used
+***deployment wont affect the standalone pod which has same label instaed it craetes new pods
+
+rolling updates-----ex:- update version 1.1 to 1.2
+roll back-----------if we do we roll back again it will restore to 1.1
+
+***check for replicaset and damenoset with same label which you craete in deployment
+***delete replicaset and damonset with same labels
+
+root@K8Master:~/deployment# kubectl get rs
+No resources found in default namespace.
+root@K8Master:~/deployment# kubectl get ds
+No resources found in default namespace.
+
+------
+
+root@K8Master:~/deployment# kubectl explain deployment
+GROUP:      apps
+KIND:       Deployment
+VERSION:    v1
+-----
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+       myapp: webapp
+  template:
+    metadata:
+      labels:
+       myapp: webapp
+    spec:
+      containers:
+      - name: mydeploymentcont
+        image: htshshrm2/production:v1
+        imagePullPolicy: IfNotPresent
+~                                           
+-----------------------
+
+root@K8Master:~/deployment# kubectl get deployment
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+mydeployment   2/2     2            2           38s
+
+root@K8Master:~/deployment# kubectl get pod --show-labels
+NAME                            READY   STATUS    RESTARTS       AGE   LABELS
+mydeployment-868f5c68cc-8rjx2   1/1     Running   0              2s    myapp=webapp,pod-template-hash=868f5c68cc
+mydeployment-868f5c68cc-ntxdq   1/1     Running   0              2s    myapp=webapp,pod-template-hash=868f5c68cc
+mynginx                         1/1     Running   1 (157m ago)   19h   run=mynginx
+mypod                           1/1     Running   3 (156m ago)   24h   run=mypod
+mypoddeploy                     1/1     Running   0              10m   myapp=webapp
+
+root@K8Master:~/deployment# kubectl get rs
+NAME                      DESIRED   CURRENT   READY   AGE
+mydeployment-868f5c68cc   2         2         2       4m20s
+---------------------------------------------------
+
+here pod has deploymnet name replicaset id and pod id
+=================================================================================================================
+
+Deployment + service
+--------------------
+
+
+apiVersion: v1
+kind: Service
+metadata:
+   name: mydeploymnetservice
+spec:
+   type: NodePort
+   ports:
+   - port: 7050
+     targetPort: 80
+     nodePort: 30050
+   selector:
+     myapp: webapp
+-----------------------
+
+root@K8Master:~/deployment-service# kubectl get service
+NAME                  TYPE           CLUSTER-IP       EXTERNAL-IP     PORT(S)          AGE
+kubernetes            ClusterIP      10.96.0.1        <none>          443/TCP          3d19h
+my-loadbalancer       LoadBalancer   10.105.16.33     172.25.230.11   7002:32733/TCP   155m
+my-sevice             ClusterIP      10.104.15.220    <none>          7000/TCP         19h
+my-sevice2            NodePort       10.111.106.26    <none>          7001:30000/TCP   19h
+mydeploymnetservice   NodePort       10.105.142.152   <none>          7050:30050/TCP   2m50s
+myreplicaservice      ClusterIP      10.100.215.144   <none>          7200/TCP         119m
+-----------------
+
+kubectl describe svc mydeploymnetservice
+
+Endpoints:                10.10.226.94:80,10.10.81.26:80
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+       myapp: webapp
+  template:
+    metadata:
+      labels:
+       myapp: webapp
+    spec:
+      containers:
+      - name: mydeploymentcont
+        image: htshshrm2/production:v2
+        imagePullPolicy: IfNotPresent
+--------------------------------------------------
+
+once we rolling the image from v1 to v2 will get like this 
+
+root@K8Master:~/deployment# kubectl get pod -o wide
+NAME                            READY   STATUS        RESTARTS        AGE   IP             NODE        NOMINATED NODE   READINESS GATES
+mydeployment-794f658866-jp7bk   1/1     Running       0               18s   10.10.226.97   k8worker1   <none>           <none>
+mydeployment-794f658866-nqx66   1/1     Running       0               16s   10.10.81.28    k8worker2   <none>           <none>
+mydeployment-97d687577-nnx2w    1/1     Terminating   0               12m   10.10.226.96   k8worker1   <none>           <none>
+mydeployment-97d687577-vjbwz    1/1     Terminating   0               12m   10.10.81.27    k8worker2   <none>           <none>
+
+root@K8Master:~/deployment# kubectl get rs
+NAME                      DESIRED   CURRENT   READY   AGE
+mydeployment-794f658866   2         2         2       42s
+mydeployment-97d687577    0         0         0       13m
+-------------------------------------------------------------------
+
+deployment and deployment-service file has linked through labels
+
+rolling update using command line
+---------------------------------
+
+kubectl set image deployment mydeployment mydeploymentcont=htshshrm2/production:v4 --record
+-------------------
+
+rollout history 
+------------
+kubectl rollout history deployment mydeployment
+
+root@K8Master:~/deployment# kubectl rollout history deployment mydeployment
+deployment.apps/mydeployment 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+4         kubectl set image deployment mydeployment mydeploymentcont=htshshrm2/production:v4 --record=true
+
+
+---
+===============================================================================================
+kubectl rollout undo deployment mydeployment       ---- for onestep back
+
+kubectl rollout undo deployment mydeployment --to-revision 1        ----for specific rollback 
+================================================================================================
+
+kubectl scale deployment mydeployment --replicas 3
+
+===================================================================================
+
+
+Recrete startergy 
+================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mydeployment-recreate
+spec:
+  strategy:
+     type: Recreate
+  replicas: 2
+  selector:
+    matchLabels:
+       myapp: webapp
+  template:
+    metadata:
+      labels:
+       myapp: webapp
+    spec:
+      containers:
+      - name: mycont
+        image: htshshrm2/production:v1
+        imagePullPolicy: IfNotPresent
+--------------------------------------
+
+root@K8Master:~/deployment# kubectl get deployment
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+mydeployment-recreate   2/2     2            2           5s
+
+
+root@K8Master:~/deployment# kubectl get rs
+NAME                               DESIRED   CURRENT   READY   AGE
+mydeployment-recreate-5468698bf6   0         0         0       2m38s
+mydeployment-recreate-744446b4c5   2         2         2       21s
+
+---------------------------------------------------------------------
+
+kubectl edit deployment mydeployment
+
+
+
+
