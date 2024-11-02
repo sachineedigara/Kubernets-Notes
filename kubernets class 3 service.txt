@@ -1,5 +1,42 @@
+Replica
+
+##################################################################
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myreplica
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mywebapp
+  template:
+    metadata:
+      labels:
+        app: mywebapp
+    spec:
+      containers:
+        - name: frontend
+          image: htshshrm2/mywebapp
+          imagePullPolicy: IfNotPresent
+
+###################################################################
+
+kubectl get replicaset
+kubectl get replicaset -o wide
+kubectl get pods --show-labels
+kubectl scale replicaset myreplica --replicas=3
+kubectl delete replicaset myreplica
+
 Service
--------
+===================
+
+kubectl get service
+
+kubectl expose replicaset myreplica --port 7200 --target-port 80 --name myservice3 --type ClusterIP
+
+
 
 1>  Cluster IP
 2>  Nodeport
