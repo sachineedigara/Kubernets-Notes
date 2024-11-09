@@ -55,6 +55,52 @@ taint & tolorence
 -----------------
 ==================
 
+Taints & Tolerations:---- (Manual scheduling)
+          taints ------> the node condition
+        tolerations-----> pod condition 
+           if node condition/taints   & pod conditions/tolerations are same ---- then only k8s will allow to create the pod on that node.
+           
+           taints ------->  labels:effect
+             ex: --- for node1            mem=huge:NoExecute
+                                                     mem=huge:NoSchedule
+                                                      key   value    effect
+                    NoSchedule :---
+                    -           ---------> all the existing pods on that worker node will continuue their operation   
+                    
+                     NoExecute :---
+                    -           ---------> all the existing pods on that worker node will be termiinated , if any pods are under replca/deployment/statefulset -----> it will be recreated on other nodes
+
+taints:-
+
+kubectl taint node kubernetesworker01 app=mywebapp:NoExecute
+kubectl taint node kubernetesworker01 app-
+kubectl get pods --show-labels -o wide
+
+Tolaration:
+
+    apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: common
+  template:
+    metadata:
+      labels:
+        app: common
+    spec:
+      containers:
+      - name: test
+        image: htshshrm2/production:v1
+      tolerations:
+      - key: "game"
+        operator: "Equal"
+        value: "soccer"
+        effect: "NoExecute"
+
 root@K8Master:~/scheduller# kubectl describe node k8worker1 | grep -i taint
 Taints:             <none>
 
@@ -87,12 +133,6 @@ root@K8Master:~# kubectl describe node k8master | grep -i taint
 Taints:             node-role.kubernetes.io/control-plane:NoSchedule
 
 ----------------------------------------------------------------
-
-
-
-
-
-
 
 
 
