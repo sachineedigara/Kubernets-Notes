@@ -334,7 +334,12 @@ this role give access to specific namespace
 
 Role--------> Role Binding-------> user
 ---------------------------------------
+kubectl create  role myrole --verb get,list,watch --resource pods
+kubectl create  role myrole --verb get,list,watch,delete --resource pods --namespace sachin
 
+controlplane $ kubectl get role --namespace sachin
+NAME     CREATED AT
+myrole   2024-11-09T18:24:34Z
 Cluster role
 ===========
 cluster role will give acces to whole cluster
