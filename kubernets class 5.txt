@@ -283,4 +283,7 @@ Events:
   Normal  Started    2m28s  kubelet            Started container mycont2
 
 
+SECRETES: 
+================
 
+refere Kubernets documentation
