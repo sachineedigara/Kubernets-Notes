@@ -287,3 +287,55 @@ SECRETES:
 ================
 
 refere Kubernets documentation
+
+
+Namespace:
+=============
+
+kubectl get ns
+kubectl create namespace sachin
+kubectl get pods --namespace sachin
+
+apiVersion: v1
+kind: Pod
+metadata:
+   name: mypodns
+   namespace: sachin
+   labels:
+     app: banana
+     game: cricket
+spec:
+  containers:
+  - name: mycont
+    image: nginx
+    imagePullPolicy: IfNotPresent
+-----------
+
+ kubectl get pods --all-namespaces
+========
+
+RBAC (Role Based Access Control)
+=================================
+
+               --------> Different types of accounts in k8s
+             --------> RBAC (Role Based Access Control)
+             
+       Different types of accounts in k8s:---
+                               ------------------------> There are two types of accounts available in k8s
+                               a> service account/sa
+                                               --------->   in every ns one sa will available by default ----> known as default sa
+                                               ---------> whenever we create any apps on that ns ----> default sa attach with that apps & responsible for apps auth from api server.
+                                               ---------> if we need to assign customized privilege to my new apps ----> better to create new sa ---> attach that  apps with apps with new sa & assign
+                                                             privelege to that new sa via RBAC    
+Role
+=========
+
+this role give access to specific namespace
+
+Role--------> Role Binding-------> user
+---------------------------------------
+
+Cluster role
+===========
+cluster role will give acces to whole cluster
+
