@@ -340,6 +340,28 @@ kubectl create  role myrole --verb get,list,watch,delete --resource pods --names
 controlplane $ kubectl get role --namespace sachin
 NAME     CREATED AT
 myrole   2024-11-09T18:24:34Z
+
+Create service account
+----------------
+kubectl create serviceaccount eedigara --namespace sachin
+
+now do role binding
+--------------------
+kubectl create rolebinding myrolebinding --role myorole --user eedigara --namespace sachin
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sachinpod
+  namespace: sachin
+spec:
+  containers:
+    - name: apple
+      image: nginx
+      imagePullPolicy: IfNotPresent
+  serviceAccountName: eedigara
+
+
 Cluster role
 ===========
 cluster role will give acces to whole cluster
