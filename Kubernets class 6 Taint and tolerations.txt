@@ -4,6 +4,20 @@ root@K8Master:~# kubectl describe node k8worker2 | grep -i taints
 Taints:             game=soccer:NoSchedule
 root@K8Master:~# 
 -------------------------------
+Taints & Tolerations:---- (Manual scheduling)
+          taints ------> the node condition
+        tolerations-----> pod condition 
+           if node condition/taints   & pod conditions/tolerations are same ---- then only k8s will allow to create the pod on that node.
+           
+           taints ------->  labels:effect
+             ex: --- for node1            mem=huge:NoExecute
+                                                     mem=huge:NoSchedule
+                                                      key   value    effect
+                    NoSchedule :---
+                    -           ---------> all the existing pods on that worker node will continuue their operation   
+                    
+                     NoExecute :---
+                    -           ---------> all the existing pods on that worker node will be termiinated , if any pods are under replca/deployment/statefulset -----> it will be recreated on other nodes
 
 taints:-
 
