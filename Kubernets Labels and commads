@@ -1,0 +1,98 @@
+kubectl run <podname> --image nginx
+kubectl get node
+kubectl get node -o wide
+
+kubectl describe node
+kubectl get pod
+kubectl get pods -o wide
+kubectl exec -it <podname> -- /bin/sh
+kubectl describe pod <podname>
+kubectl run mypod3 --image nginx
+kubectl cluster-info
+kubectl delete pods <name of pod>
+kubectl explain pod
+kubectl exec -it mypod -c mycontainer /bin/sh
+kubectl create -f mypod.yaml
+kubectl apply -f mypod.yaml
+kubectl replace --force -f mypod.yaml
+
+#######sample yaml file for pod creation###############################
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: monday
+spec:
+  containers:
+    - name: apple
+      image: nginx
+      imagePullPolicy: IfNotPresent
+
+    - name: mango
+      image: memcached
+      imagePullPolicy: IfNotPresent
+
+    - name: banana
+      image: redis
+      imagePullPolicy: IfNotPresent
+      
+
+ ###############labels###########################
+ 
+ kubectl label pod mypod app=mywebapp fruits=apple
+ kubectl label pod mypod --overwrite fruits=banana
+ kubectl label pod mypod fruits-
+ 
+ ###################Selector########################
+ 
+ kubectl get pods --selector app=mywebapp
+ kubectl get pods --selector app=mywebapp --show-labels
+ 
+ 
+ selector types
+----------
+equal based
+set based
+
+set based
+========
+controlplane $ kubectl get pod --selector 'fruit in(apple,banana)' --show-labels
+NAME     READY   STATUS    RESTARTS   AGE   LABELS
+mypod    1/1     Running   0          22m   app=myapp,fruit=apple
+mypod2   1/1     Running   0          19m   app=myapp,fruit=banana
+
+apply multiple labels to a pod
+===============
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tuesday
+  labels:
+     name: sachin
+     age: twentyseven
+     gender: male
+spec:
+  containers:
+    - name: apple
+      image: nginx
+      imagePullPolicy: IfNotPresent
+
+    - name: mango
+      image: memcached
+      imagePullPolicy: IfNotPresent
+
+    - name: banana
+      image: redis
+      imagePullPolicy: IfNotPresent
+
+ 
+ 
+######################Assignments################################################
+
+1 Create a pod with imagepullpolicy set to ifnotpresent?(try via command as well as yaml)
+2. Create three pods with labels class=cka, batch=march, year 2024
+create three pods with labels class=devops, batch=march, year 2023
+
+use selector to get all pods from March batch, year 2023
+done 
+3. remove labels from all pods with batch march and update it as april 2024 
