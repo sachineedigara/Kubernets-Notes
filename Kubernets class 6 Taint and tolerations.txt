@@ -5,6 +5,13 @@ Taints:             game=soccer:NoSchedule
 root@K8Master:~# 
 -------------------------------
 
+taints:-
+
+kubectl taint node kubernetesworker01 app=mywebapp:NoExecute
+kubectl taint node kubernetesworker01 app-
+kubectl get pods --show-labels -o wide
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
