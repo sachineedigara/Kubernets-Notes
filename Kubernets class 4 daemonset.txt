@@ -55,11 +55,6 @@ roll back-----------if we do we roll back again it will restore to 1.1
 ***check for replicaset and damenoset with same label which you craete in deployment
 ***delete replicaset and damonset with same labels
 
-root@K8Master:~/deployment# kubectl get rs
-No resources found in default namespace.
-root@K8Master:~/deployment# kubectl get ds
-No resources found in default namespace.
-
 ------
 
 root@K8Master:~/deployment# kubectl explain deployment
