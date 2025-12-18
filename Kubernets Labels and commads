@@ -86,7 +86,7 @@ spec:
       imagePullPolicy: IfNotPresent
 
  
- 
+ https://chatgpt.com/share/69446c47-ce60-8000-ad8a-7c200d7a8ece
 ######################Assignments################################################
 
 1 Create a pod with imagepullpolicy set to ifnotpresent?(try via command as well as yaml)
