@@ -53,7 +53,7 @@ rolling updates-----ex:- update version 1.1 to 1.2
 roll back-----------if we do we roll back again it will restore to 1.1
 
 ***check for replicaset and damenoset with same label which you craete in deployment
-***delete replicaset and damonset with same labels
+***delete replicaset and damonset with same labels.
 
 ------
 
